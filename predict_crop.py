@@ -14,11 +14,12 @@ def home():
 def prediction():
     data = request.json
     area = data['area']
-    crop = data['crop']
-    district = data['district']
+    crop = data['crop'].lower()
+    district = data['district'].lower()
     market_price = 0
     bengal_gram, ground_nut, maize = 0, 0, 0
     adilabad, bhadradri, hyderabad, jagtial = 0, 0, 0, 0
+    graph_data = []
     if crop.lower() == 'bengal_gram':
         bengal_gram = 1
         market_price = 52.3
@@ -48,8 +49,15 @@ def prediction():
         from sklearn import linear_model
         regr = linear_model.LinearRegression()
         regr.fit(X, Y)
-        print([adilabad, bhadradri, hyderabad, jagtial, bengal_gram, ground_nut, maize, area])
         prediction = regr.predict([[adilabad, bhadradri, hyderabad, jagtial, bengal_gram, ground_nut, maize, area]])
+        index_list = df.index[(df['district_'+district]==1)&(df['crop_'+crop]==1)].tolist()
+        for index in index_list:
+            sub_response = {}
+            sub_response['year'] = int(df['Year'][index])
+            sub_response['min_temp'] = df['Min_Temp'][index]
+            sub_response['max_temp'] = df['Max_Temp'][index]
+            sub_response['rainfall'] = df['Total_Rainfall'][index]
+            graph_data.append(sub_response)
     except Exception as e:
         print(e)
         return jsonify({"status": 400,
@@ -59,7 +67,8 @@ def prediction():
     return jsonify({
         'status': 200,
         'prediction': round(prediction[0]),
-        'profit':  round(prediction[0] * market_price)
+        'profit':  round(prediction[0] * market_price),
+        'graph_data': graph_data
     })
 
 
